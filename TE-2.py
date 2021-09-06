@@ -1,5 +1,6 @@
 #!/usr/bin/pythonsys.argv
 import sys
+import helper
 
 
 def init():
@@ -7,8 +8,11 @@ def init():
 
 
 def execute():
-    print("Task is running...")
-    print(sys.argv)
+    try:
+        print("Task is running...")
+        raise helper.StepException('Some issue')
+    except helper.StepException:
+        rollback()
 
 
 def rollback():
@@ -20,4 +24,3 @@ if __name__ == '__main__':
         rollback()
     else:
         execute()
-

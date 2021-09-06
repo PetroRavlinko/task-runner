@@ -8,7 +8,6 @@ def init():
 
 def execute():
     print("Task is running...")
-    print(sys.argv)
 
 
 def rollback():

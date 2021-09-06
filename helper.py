@@ -1,6 +1,8 @@
 #!/usr/bin/python
 import os
+import subprocess
 import argparse
+import fnmatch
 
 
 def get_arguments():
@@ -26,6 +28,25 @@ def get_arguments():
                         help='AWS region')
 
     return parser.parse_args()
+
+
+def execute_tasks():
+    executed_tasks = []
+    try:
+        for file in os.listdir('.'):
+            if fnmatch.fnmatch(file, '*-[0-9]*.py'):
+                print(file)
+                result = subprocess.run(["python", file], stdout=subprocess.PIPE)
+                print(result.stdout.decode('utf-8'))
+                executed_tasks.append(file)
+    except StepException:
+        for file in executed_tasks:
+            subprocess.run(["python", file, '--rollback'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+
+
+class StepException(Exception):
+    pass
+
 
 class Task(object):
     def __init__(self, context):
