@@ -2,7 +2,7 @@ import unittest
 import helper
 
 
-class TestTaskMethods(unittest.TestCase):
+class TestTaskRunnerMethods(unittest.TestCase):
 
     def setUp(self):
         self.unit = helper.Task({})

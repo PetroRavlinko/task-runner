@@ -3,6 +3,8 @@ import os
 import subprocess
 import argparse
 import fnmatch
+import json
+import time
 
 
 def get_arguments():
@@ -30,18 +32,27 @@ def get_arguments():
     return parser.parse_args()
 
 
+executing_results = []
+
+
 def execute_tasks():
     executed_tasks = []
-    try:
-        for file in os.listdir('.'):
-            if fnmatch.fnmatch(file, '*-[0-9]*.py'):
-                print(file)
-                result = subprocess.run(["python", file], stdout=subprocess.PIPE)
-                print(result.stdout.decode('utf-8'))
-                executed_tasks.append(file)
-    except StepException:
-        for file in executed_tasks:
-            subprocess.run(["python", file, '--rollback'], stdout=subprocess.PIPE).stdout.decode('utf-8')
+    for file in os.listdir('.'):
+        task_execution_result = {}
+
+        if fnmatch.fnmatch(file, '*_[0-9]*.py'):
+            print(file)
+            task_execution_result.update({'file': file})
+
+            result = subprocess.run(['python', file], stdout=subprocess.PIPE)
+            print(result.stdout.decode('utf-8'))
+            executed_tasks.append(file)
+            executing_results.append(task_execution_result)
+
+    json_object = json.dumps(executing_results, indent=4)
+    time_str = time.strftime("%Y%m%d-%H%M%S")
+    with open(f"execution_{time_str}.json", "w") as outfile:
+        outfile.write(json_object)
 
 
 class StepException(Exception):
