@@ -12,7 +12,7 @@ def execute():
         print("Task is running...")
         raise helper.StepException('Some issue')
     except helper.StepException:
-        rollback()
+        exit(1)
 
 
 def rollback():
