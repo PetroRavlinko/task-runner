@@ -4,11 +4,8 @@ import subprocess
 import argparse
 import fnmatch
 import json
-import time
 import datetime
 import hashlib
-
-from enum import Enum
 
 
 def get_arguments():
@@ -64,18 +61,7 @@ def execute_tasks():
     # time_str = time.strftime("%Y%m%d-%H%M%S")
 
     # with open(f"execution_{time_str}.json", "w") as outfile:
-        # outfile.write(json_object)
-
-
-def print_task_stdout(argument):
-    def decorator(func):
-        def wrapper(file):
-            print(file)
-            result = func(file)
-            print(result.stdout.decode('utf-8'))
-            print(result)
-        return wrapper
-    return decorator
+    # outfile.write(json_object)
 
 
 class StepException(Exception):
@@ -88,23 +74,23 @@ def rollback_on_fail(func):
         print(result)
         if result.returncode != 0:
             self.failed()
-            result = self.rollback()
+            self.rollback()
+
     return wrapper
 
 
-def md5(fname):
-    hash_md5 = hashlib.md5()
+def sha256(fname):
     with open(fname, "rb") as f:
-        for chunk in iter(lambda: f.read(4096), b""):
-            hash_md5.update(chunk)
-    return hash_md5.hexdigest()
+        chunk = f.read()
+        readable_hash = hashlib.sha256(chunk)
+    return readable_hash.hexdigest()
 
 
 class Task(object):
     def __init__(self, file):
         self.file = file
         self.status = 'CREATED'
-        self.md5 = md5(file)
+        self.sha256 = sha256(file)
         self.datetime = datetime.datetime.now()
         self.stdout = 'Task is created'
         self.actions = []
@@ -117,11 +103,8 @@ class Task(object):
         self.track_event()
         return result
 
-
     def rollback(self):
-        result = subprocess.run(
-            ['python', self.file, '--rollback'],
-            stdout=subprocess.PIPE)
+        result = subprocess.run(['python', self.file, '--rollback'], stdout=subprocess.PIPE)
         self.stdout = result.stdout.decode('utf-8')
         print(result)
         if result.returncode == 0:
