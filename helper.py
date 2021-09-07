@@ -4,6 +4,7 @@ import subprocess
 import argparse
 import fnmatch
 import json
+import time
 import datetime
 import hashlib
 
@@ -46,6 +47,8 @@ def plan_tasks():
 
 
 def task_json_converter(o):
+    if isinstance(o, Task):
+        return o.__dict__
     if isinstance(o, TaskEvent):
         return o.__dict__
     if isinstance(o, datetime.datetime):
@@ -53,15 +56,17 @@ def task_json_converter(o):
 
 
 def execute_tasks():
+    tasks = []
     for task in plan_tasks():
         task.run()
-        print(json.dumps(task.__dict__, default=task_json_converter))
+        tasks.append(task)
+    
+    json_object = json.dumps(tasks, default=task_json_converter)
 
-    # json_object = json.dumps(executing_results, indent=4)
-    # time_str = time.strftime("%Y%m%d-%H%M%S")
+    time_str = time.strftime("%Y%m%d-%H%M%S")
 
-    # with open(f"execution_{time_str}.json", "w") as outfile:
-    # outfile.write(json_object)
+    with open(f"execution_{time_str}.json", "w") as outfile:
+        outfile.write(json_object)
 
 
 class StepException(Exception):
