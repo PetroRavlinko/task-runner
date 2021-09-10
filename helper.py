@@ -11,6 +11,7 @@ import time
 import datetime
 import hashlib
 import logging
+import boto3
 
 logging.basicConfig(format='%(asctime)s :: %(levelname)s :: %(message)s', level = logging.INFO)
 
@@ -129,6 +130,8 @@ save_to_file = False
 eventSubject = TaskEventSubject()
 consoleOutObserver = TaskEventConsoleOutObserver()
 eventSubject.attach(consoleOutObserver)
+s3bucketName = 'bucket'
+s3 = boto3.resource('s3')
 
 
 def execute_tasks():
@@ -147,10 +150,6 @@ def saveToJsonFile(tasks):
 
     with open(f"execution_{time_str}.json", "w") as outfile:
         outfile.write(json_object)
-
-
-class StepException(Exception):
-    pass
 
 
 def rollback_on_fail(func):

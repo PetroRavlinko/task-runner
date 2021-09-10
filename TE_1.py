@@ -2,10 +2,6 @@
 import sys
 
 
-def init():
-    print('Hi')  # Press ⌘F8 to toggle the breakpoint.
-
-
 def execute():
     print("Task is running...")
 

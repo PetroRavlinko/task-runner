@@ -9,11 +9,38 @@ Task runner project should help with automation of some DevOps manual tasks that
 
 ---
 
+## Requirements
+
+- python
+- pip
+
+
+> TODO: migrate on ```virtualenv```
+
+
+### Dependency management
+
+#### Install required packages
+
+```shell
+pip install -r requirements.txt
+```
+
+#### Uninstall related dependencies
+
+```shell
+pip uninstall -r requirements.txt -y
+```
+
+
 ## Code structure
+
 ### New task conventions
+
 Ticket name with ```_``` replacement for all special symbols.
 
 ## Unit tests
+
 The tests are implemented and run with ```unittest``` framework. You need run a command below to run all tests
 
 ```shell

@@ -21,3 +21,5 @@ services:
       - 4571:4571
       - 4572:4572
       - 9999:8080
+    volumes:
+      - ./aws:/docker-entrypoint-initaws.d

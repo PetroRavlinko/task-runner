@@ -1,17 +1,12 @@
 #!/usr/bin/pythonsys.argv
 import sys
-import helper
-
-
-def init():
-    print('Hi')  # Press ⌘F8 to toggle the breakpoint.
 
 
 def execute():
     try:
         print("Task is running...")
-        raise helper.StepException('Some issue')
-    except helper.StepException:
+        raise Exception('Some issue')
+    except Exception:
         exit(1)
 
 
