@@ -126,12 +126,13 @@ def task_json_converter(o):
         return str(o)
 
 
-save_to_file = False
+save_to_file = True
 eventSubject = TaskEventSubject()
 consoleOutObserver = TaskEventConsoleOutObserver()
 eventSubject.attach(consoleOutObserver)
 s3bucketName = 'bucket'
-s3 = boto3.resource('s3')
+endpoint_url = '{}://{}:{}'.format('http', 'localhost', '4566') 
+s3 = boto3.client('s3', endpoint_url=endpoint_url, verify=False)
 
 
 def execute_tasks():
@@ -150,6 +151,11 @@ def saveToJsonFile(tasks):
 
     with open(f"execution_{time_str}.json", "w") as outfile:
         outfile.write(json_object)
+    
+    try:
+        response = s3.upload_file(f"execution_{time_str}.json", 'bucket', f"execution_{time_str}.json")
+    except ClientError as e:
+        logging.error(e)
 
 
 def rollback_on_fail(func):
