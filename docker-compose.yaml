@@ -5,3 +5,19 @@ services:
 
   localstack:
     image: localstack/localstack:latest
+    container_name: localstack
+    restart: always
+    environment:
+      - SERVICES=s3
+      - DEFAULT_REGION=eu-west-1
+      - DOCKER_HOST=unix:///var/run/docker.sock
+    healthcheck:
+      test: ["CMD", "bash", "-c", "awslocal s3 ls"]
+      interval: 5s
+      timeout: 10s
+      retries: 10
+    ports:
+      - 4566:4566
+      - 4571:4571
+      - 4572:4572
+      - 9999:8080

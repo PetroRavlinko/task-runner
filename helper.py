@@ -1,4 +1,7 @@
 #!/usr/bin/python
+from __future__ import annotations
+from abc import ABC, abstractmethod
+from typing import List
 import os
 import subprocess
 import argparse
@@ -7,6 +10,73 @@ import json
 import time
 import datetime
 import hashlib
+import logging
+
+logging.basicConfig(format='%(asctime)s :: %(levelname)s :: %(message)s', level = logging.INFO)
+
+
+class TaskEvent(object):
+    def __init__(self, task):
+        self.taskName = task.file
+        self.datetime = datetime.datetime.now()
+        self.status = task.status
+        self.stdout = task.stdout
+
+
+class Observer(ABC):
+    """
+    The Observer interface declares the update method, used by subjects.
+    """
+
+    @abstractmethod
+    def update(self, subject: Subject) -> None:
+        """
+        Receive update from subject.
+        """
+        pass
+
+
+class Subject(ABC):
+    """
+    The Subject interface declares a set of methods for managing subscribers.
+    """
+
+    @abstractmethod
+    def attach(self, observer: Observer) -> None:
+        """
+        Attach an observer to the subject.
+        """
+        pass
+
+    @abstractmethod
+    def notify(self) -> None:
+        """
+        Notify all observers about an event.
+        """
+        pass
+
+
+class TaskEventSubject(Subject):
+    _state: TaskEvent = None
+
+    _observers: List[Observer] = []
+
+    def attach(self, observer: Observer) -> None:
+        self._observers.append(observer)
+
+    def notify(self) -> None:
+        for observer in self._observers:
+            observer.update(self)
+
+    def trace(self, taskEvent: TaskEvent) -> None:
+        self._state = taskEvent
+        self.notify()
+
+
+
+class TaskEventConsoleOutObserver(Observer):
+    def update(self, subject: Subject) -> None:
+        logging.info(f"{subject._state.taskName} - {subject._state.status} - {subject._state.stdout}")
 
 
 def get_arguments():
@@ -55,14 +125,24 @@ def task_json_converter(o):
         return str(o)
 
 
+save_to_file = False
+eventSubject = TaskEventSubject()
+consoleOutObserver = TaskEventConsoleOutObserver()
+eventSubject.attach(consoleOutObserver)
+
+
 def execute_tasks():
     tasks = []
     for task in plan_tasks():
         task.run()
         tasks.append(task)
-    
-    json_object = json.dumps(tasks, default=task_json_converter)
 
+    if save_to_file:
+        saveToJsonFile(tasks)
+
+
+def saveToJsonFile(tasks):
+    json_object = json.dumps(tasks, default=task_json_converter)
     time_str = time.strftime("%Y%m%d-%H%M%S")
 
     with open(f"execution_{time_str}.json", "w") as outfile:
@@ -76,7 +156,6 @@ class StepException(Exception):
 def rollback_on_fail(func):
     def wrapper(self):
         result = func(self)
-        print(result)
         if result.returncode != 0:
             self.failed()
             self.rollback()
@@ -109,9 +188,9 @@ class Task(object):
         return result
 
     def rollback(self):
-        result = subprocess.run(['python', self.file, '--rollback'], stdout=subprocess.PIPE)
+        result = subprocess.run(
+            ['python', self.file, '--rollback'], stdout=subprocess.PIPE)
         self.stdout = result.stdout.decode('utf-8')
-        print(result)
         if result.returncode == 0:
             self.status = 'ROLLED_BACK'
         else:
@@ -125,11 +204,6 @@ class Task(object):
         self.track_event()
 
     def track_event(self):
-        self.actions.append(TaskEvent(self))
-
-
-class TaskEvent(object):
-    def __init__(self, task):
-        self.datetime = datetime.datetime.now()
-        self.status = task.status
-        self.stdout = task.stdout
+        taskEvent: TaskEvent = TaskEvent(self)
+        self.actions.append(taskEvent)
+        eventSubject.trace(taskEvent)
