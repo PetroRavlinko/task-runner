@@ -2,6 +2,7 @@
 import helper
 
 
+
 def main():
     args = helper.get_arguments()
     print(args.accountType)
