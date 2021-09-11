@@ -12,6 +12,7 @@ import datetime
 import hashlib
 import logging
 import boto3
+from enum import Enum
 
 logging.basicConfig(format='%(asctime)s :: %(levelname)s :: %(message)s', level = logging.INFO)
 
@@ -74,7 +75,6 @@ class TaskEventSubject(Subject):
         self.notify()
 
 
-
 class TaskEventConsoleOutObserver(Observer):
     def update(self, subject: Subject) -> None:
         logging.info(f"{subject._state.taskName} - {subject._state.status} - {subject._state.stdout}")
@@ -105,9 +105,6 @@ def get_arguments():
     return parser.parse_args()
 
 
-executing_results = []
-
-
 def plan_tasks():
     tasks = []
     for file in os.listdir('.'):
@@ -124,6 +121,8 @@ def task_json_converter(o):
         return o.__dict__
     if isinstance(o, datetime.datetime):
         return str(o)
+    if isinstance(o, TaskStatus):
+        return o.name
 
 
 save_to_file = True
@@ -132,7 +131,11 @@ consoleOutObserver = TaskEventConsoleOutObserver()
 eventSubject.attach(consoleOutObserver)
 s3bucketName = 'bucket'
 endpoint_url = os.getenv('S3_ENDPOINT_URL', '{}://{}:{}'.format('http', 'localhost', '4566'))
-s3 = boto3.client('s3', endpoint_url=endpoint_url, verify=False)
+
+if endpoint_url:
+    s3 = boto3.client('s3', endpoint_url=endpoint_url, verify=False)
+else:
+    s3 = boto3.client('s3')
 
 
 def execute_tasks():
@@ -148,14 +151,13 @@ def execute_tasks():
 def saveToJsonFile(tasks):
     json_object = json.dumps(tasks, default=task_json_converter)
     time_str = time.strftime("%Y%m%d-%H%M%S")
+    json_file_name = f"execution_{time_str}.json"
 
-    with open(f"execution_{time_str}.json", "w") as outfile:
+    with open(json_file_name, "w") as outfile:
         outfile.write(json_object)
     
-    try:
-        response = s3.upload_file(f"execution_{time_str}.json", 'bucket', f"execution_{time_str}.json")
-    except ClientError as e:
-        logging.error(e)
+    with open(json_file_name, "rb") as f:
+        response = s3.upload_file(f, s3bucketName, json_file_name)
 
 
 def rollback_on_fail(func):
@@ -174,11 +176,18 @@ def sha256(fname):
         readable_hash = hashlib.sha256(chunk)
     return readable_hash.hexdigest()
 
+class TaskStatus(Enum):
+    CREATED = 'CREATED'
+    IN_PROGRESS = 'IN_PROGRESS'
+    ROLLED_BACK = 'ROLLED_BACK'
+    ROLLBACK_FAILED = 'ROLLBACK_FAILED'
+    FAILED = 'FAILED'
+
 
 class Task(object):
     def __init__(self, file):
         self.file = file
-        self.status = 'CREATED'
+        self.status = TaskStatus.CREATED
         self.sha256 = sha256(file)
         self.datetime = datetime.datetime.now()
         self.stdout = 'Task is created'
@@ -186,7 +195,7 @@ class Task(object):
 
     @rollback_on_fail
     def run(self):
-        self.status = 'IN_PROGRESS'
+        self.status = TaskStatus.IN_PROGRESS
         result = subprocess.run(['python', self.file], stdout=subprocess.PIPE)
         self.stdout = result.stdout.decode('utf-8')
         self.track_event()
@@ -197,14 +206,14 @@ class Task(object):
             ['python', self.file, '--rollback'], stdout=subprocess.PIPE)
         self.stdout = result.stdout.decode('utf-8')
         if result.returncode == 0:
-            self.status = 'ROLLED_BACK'
+            self.status = TaskStatus.ROLLED_BACK
         else:
-            self.status = 'ROLLBACK_FAILED'
+            self.status = TaskStatus.ROLLBACK_FAILED
         self.track_event()
         return result
 
     def failed(self):
-        self.status = 'FAILED'
+        self.status = TaskStatus.FAILED
         self.stdout = 'Task is failed'
         self.track_event()
 
