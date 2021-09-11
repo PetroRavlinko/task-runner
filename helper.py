@@ -131,7 +131,7 @@ eventSubject = TaskEventSubject()
 consoleOutObserver = TaskEventConsoleOutObserver()
 eventSubject.attach(consoleOutObserver)
 s3bucketName = 'bucket'
-endpoint_url = '{}://{}:{}'.format('http', 'localhost', '4566') 
+endpoint_url = os.getenv('S3_ENDPOINT_URL', '{}://{}:{}'.format('http', 'localhost', '4566'))
 s3 = boto3.client('s3', endpoint_url=endpoint_url, verify=False)
 
 

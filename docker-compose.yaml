@@ -1,7 +1,5 @@
 version: "3"
 services:
-  task_runner:
-    build: .
 
   localstack:
     image: localstack/localstack:latest
@@ -12,7 +10,7 @@ services:
       - DEFAULT_REGION=eu-west-1
       - DOCKER_HOST=unix:///var/run/docker.sock
     healthcheck:
-      test: ["CMD", "bash", "-c", "awslocal s3 ls"]
+      test: ["CMD", "bash", "-c", "awslocal s3 ls bucket"]
       interval: 5s
       timeout: 10s
       retries: 10
@@ -23,3 +21,15 @@ services:
       - 9999:8080
     volumes:
       - ./aws:/docker-entrypoint-initaws.d
+
+  task_runner:
+    build: .
+    container_name: task_runner
+    environment:
+      - S3_ENDPOINT_URL=http://localstack:4566
+      - AWS_ACCESS_KEY_ID=foo
+      - AWS_SECRET_ACCESS_KEY=bar
+      - AWS_REGION=eu-west-1
+    depends_on:
+      localstack:
+        condition: service_healthy
