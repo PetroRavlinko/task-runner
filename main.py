@@ -1,10 +1,12 @@
 #!/usr/bin/python
 import helper
+from context import Context
 
 
 
 def main():
-    args = helper.get_arguments()
+    context = Context()
+    args = context.get_arguments()
     print(args.accountType)
     print(args.awsCliProfile)
     print(args.awsRegion)

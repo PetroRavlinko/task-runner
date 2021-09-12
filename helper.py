@@ -4,7 +4,6 @@ from abc import ABC, abstractmethod
 from typing import List
 import os
 import subprocess
-import argparse
 import fnmatch
 import json
 import time
@@ -79,30 +78,6 @@ class TaskEventConsoleOutObserver(Observer):
     def update(self, subject: Subject) -> None:
         logging.info(f"{subject._state.taskName} - {subject._state.status} - {subject._state.stdout}")
 
-
-def get_arguments():
-    parser = argparse.ArgumentParser(prog='eat',
-                                     description='Automated Task Executor (ATE). Run automated custom steps.')
-    parser.add_argument('-a',
-                        dest='accountType',
-                        default='dev',
-                        metavar='ACCOUNT_TYPE',
-                        type=str,
-                        help='Account type')
-    parser.add_argument('-p',
-                        dest='awsCliProfile',
-                        default='default',
-                        metavar='PROFILE',
-                        type=str,
-                        help='aws-cli profile')
-    parser.add_argument('--region',
-                        dest='awsRegion',
-                        default='us-west-1',
-                        metavar='REGION',
-                        type=str,
-                        help='AWS region')
-
-    return parser.parse_args()
 
 
 def plan_tasks():
