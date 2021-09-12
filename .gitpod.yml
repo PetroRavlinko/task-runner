@@ -1,0 +1,14 @@
+tasks:
+  - init: echo 'init script' # runs during prebuild
+    command: echo 'start script'
+  - name: Define AWS cli env variables
+    command: |
+      gp env AWS_ACCESS_KEY_ID=foo
+      gp env AWS_SECRET_ACCESS_KEY=bar
+      gp env AWS_REGION=eu-west-1
+
+
+# List the ports to expose. Learn more https://www.gitpod.io/docs/config-ports/
+# ports:
+#   - port: 3000
+#     onOpen: open-preview
