@@ -13,6 +13,9 @@ import logging
 import boto3
 from enum import Enum
 
+from context import Context
+from adapter import saveobj_on_s3
+
 logging.basicConfig(format='%(asctime)s :: %(levelname)s :: %(message)s', level = logging.INFO)
 
 
@@ -100,52 +103,32 @@ def task_json_converter(o):
         return o.name
 
 
-save_to_file = True
 eventSubject = TaskEventSubject()
 consoleOutObserver = TaskEventConsoleOutObserver()
 eventSubject.attach(consoleOutObserver)
-s3bucketName = 'bucket'
-endpoint_url = os.getenv('S3_ENDPOINT_URL', '{}://{}:{}'.format('http', 'localhost', '4566'))
 
-if endpoint_url:
-    s3 = boto3.client('s3', endpoint_url=endpoint_url, verify=False)
-else:
-    s3 = boto3.client('s3')
+class TaskRunner(object):
+    def __init__(self, context: Context):
+        self.context = context
+        self.tasks = []
 
-def saveToJsonFile(tasks: List[Task]) -> str:
-    json_object = json.dumps(tasks, default=task_json_converter)
-    time_str = time.strftime("%Y%m%d-%H%M%S")
-    json_file_name = f"execution_{time_str}.json"
+    @saveobj_on_s3('bucket')
+    def execute_tasks(self):
+        for task in plan_tasks():
+            task.run()
+            self.tasks.append(task)
+        
+        return self.saveToJsonFile(task)
 
-    with open(json_file_name, "w") as outfile:
-        outfile.write(json_object)
-    
-    return json_file_name
-    
-def safeOnS3(file_name: str) -> None:
-    with open(file_name, "rb") as f:
-        s3.upload_fileobj(f, s3bucketName, file_name)
+    def saveToJsonFile(self, tasks: List[Task]) -> str:
+        json_object = json.dumps(tasks, default=task_json_converter)
+        time_str = time.strftime("%Y%m%d-%H%M%S")
+        json_file_name = f"execution_{time_str}.json"
 
-def save_on_s3(func):
-    def wrapper():
-        tasks = func()
-
-        if save_to_file:
-            safeOnS3(saveToJsonFile(tasks))
-    
-    return wrapper
-
-
-@save_on_s3
-def execute_tasks():
-    tasks = []
-
-    for task in plan_tasks():
-        task.run()
-        tasks.append(task)
-    
-    return task
-
+        with open(json_file_name, "w") as outfile:
+            outfile.write(json_object)
+        
+        return json_file_name
 
 def rollback_on_fail(func):
     def wrapper(self):

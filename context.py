@@ -1,12 +1,16 @@
 #!/usr/bin/python
+import os
 import argparse
+
+S3_HISTORY_BUCKET_NAME_ENV = 'S3_HISTORY_BUCKET_NAME_ENV'
+S3_ENDPOINT_URL_ENV = 'S3_ENDPOINT_URL'
 
 class Context():
     def __init__(self):
-        self.s3_endpoint_url = '{}://{}:{}'.format('http', 'localhost', '4566')
-        self.task_run_history_s3_bucket_name = 'bucket'
-        self.parser = argparse.ArgumentParser(prog='eat',
-                                        description='Automated Task Executor (ATE). Run automated custom steps.')
+        self.s3_history_bucket_name = os.getenv(S3_HISTORY_BUCKET_NAME_ENV, 'bucket')
+        self.s3_endpoint_url = os.getenv(S3_ENDPOINT_URL_ENV, '{}://{}:{}'.format('http', 'localhost', '4566'))
+
+        self.parser = argparse.ArgumentParser(prog='eat', description='Automated Task Executor (ATE). Run automated custom steps.')
         self.define_arguments()                                
     
     def define_arguments(self) -> None:
@@ -28,6 +32,7 @@ class Context():
                             metavar='REGION',
                             type=str,
                             help='AWS region')
+
 
     def get_arguments(self):
         return self.parser.parse_args()

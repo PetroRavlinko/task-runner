@@ -1,5 +1,5 @@
 #!/usr/bin/python
-import helper
+from helper import TaskRunner
 from context import Context
 
 
@@ -10,7 +10,8 @@ def main():
     print(args.accountType)
     print(args.awsCliProfile)
     print(args.awsRegion)
-    helper.execute_tasks()
+    task_runner = TaskRunner(context)
+    task_runner.execute_tasks()
 
 
 if __name__ == '__main__':
